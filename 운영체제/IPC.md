@@ -1,8 +1,9 @@
 ### IPC 란?
+
 - 프로세스간 통신은 스레드와 달리 공유 메모리를 사용하지 않기 때문에 Inter Process Communication 이라는 IPC를 사용해서 통신해야 함.
 - 아래 그림처럼 프로세스는 완전 독립된 실행 객체임.
 
-![alt text](image.png)
+![alt text](resource/image.png)
 
 <br><br><Br>
 
