@@ -111,4 +111,4 @@
 - 선점형 스케줄링에서는 운영체제가 강제로 Ready Queue로 내릴 수 있음.
 - I/O 요청이 발생하면 Ready Queue가 아니라, I/O 대기 큐(Waiting Queue)로 이동 후 다시 Ready Queue로 돌아옴.
 - 인터럽트 발생 시, 실행 중인 프로세스는 Ready Queue로 내려가고, 인터럽트 핸들러가 실행됨.
-- 즉, 운영체제는 다양한 이유로 프로세스를 Ready 상태로 전환시키며, 프로세스는 Ready ↔ Running ↔ Waiting을 반복하며 실행됩니다! 🚀
+- 즉, 운영체제는 다양한 이유로 프로세스를 Ready 상태로 전환시키며, 프로세스는 Ready ↔ Running ↔ Waiting을 반복하며 실행.
