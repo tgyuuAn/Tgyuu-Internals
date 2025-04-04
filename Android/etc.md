@@ -293,6 +293,22 @@ https://blog.naver.com/tgyuu_/223595686577
 
 ### 안드로이드에서 백그라운드 동작을 하는 방법을 아는대로 말해보세요.
 
+#### 앱 내 백그라운드 처리
+
+- Handler + Looper를 이용해서 백그라운드 동작
+- Java Thread를 이용해서 워커 스레드를 만들고 백그라운드 동작
+- RxJava를 이용한 비동기 처리
+- Coroutine을 이용하여 비동기 처리
+
+#### 시스템 상 백그라운드 처리
+
+- Service
+- WorkManager
+
+- WorkManager는 백그라운드에서 지속적으로 동작해야 하는 경우나 네트워크 연결이라는 특정한 조건, 혹은 백그라운드에서 동작하는데 신뢰 및 안정성이 보장되어야 하는 작업에 적합
+- WorkManager로 실행한 작업은 OS수준에서 신뢰성을 보장하며 실패하더라도 자동으로 재시도 함.
+- 주로 로그 파일 전송이나 미디어 파일 백그라운드 전송 등에서 사용 _(onStop에서 사용자 로그 전송을 할 때 WorkManager한테 위임하여 신뢰성 있는 전송을 보장, Coroutine으로 할 경우 긴 작업이거나 프로세스를 종료시키면 전송이 실패할 수 있음)_
+
 <br><br><br>
 
 ### 안드로이드에서 메모리 누수를 감지할 수 있는 방법은 어떤 것이 있을까요?
@@ -328,52 +344,177 @@ https://blog.naver.com/tgyuu_/223595686577
 
 ### MultiPart에 대해서 설명해주세요.
 
+- Http에서 여러 종류의 데이터를 한 번에 업로드할 때 사용되는 Content Type
+- 주로 서버에 이미지나 미디어 파일을 업로드할 때 사용
+- 이미지 파일의 경우 이미지 데이터 + 파일 이름과 같이 여러 타입의 데이터를 전송해야 하는데, 이처럼 여러 타입의 데이터를 한 번에 전송할 때 사용
+- Android에서는 Okhttp + Retrofit + @Multipart + @Part 조합으로 손쉽게 구현가능
+
 <br><br><br>
 
 ### Retrofit을 사용할 때 GET이나 DELETE에 Body를 담는 방법에 대해서 설명해주세요.
+
+- @GET, @DELETE과 같이 사전에 정의된 어노테이션은 RESTful API에 맞게 Body를 삽입할 수 업도록 정의되어 있음
+- 하지만 정말 Body가 필요하다면 @HTTP 어노테이션을 사용해서 method에 "GET"을 삽입, hasBody = true를 통해 사용할 수 있음
+
+```kotlin
+@HTTP(method = "GET", path = "/search", hasBody = true)
+fun searchWithBody(@Body request: SearchRequest): Response<T>
+```
 
 <br><br><br>
 
 ### MultiDex에 대해서 아는대로 설명해주세요.
 
+- 일반 Dex파일은 메소드를 64K밖에 저장하지 못함 그렇기 때문에 어플리케이션의 규모가 커지거나 외부 라이브러리를 많이 사용한다면 초과할 수 있음
+- 이 때 Mutldex를 사용하면 dex파일을 2개 이상으로 쪼개어 65K이상의 메소드를 사용할 수 있게됨
+- Android 5.0 부터는 기본 지원되는 기능임
+
 <br><br><br>
 
 ### Zygote에 대해서 아는대로 설몀해주세요.
+
+- 휴대폰이 부팅될 때 Linux Kernal의 Init에서 시작되는 모든 프로세스의 부모인 마스터 프로세스
+- 대부분의 앱에서 공통으로 사용되는 ART나 Native Method나 ClassLoader 등을 가지고 있으며, 새로운 앱이 실행될 때 Zygote를 fork()해서 공통된 로직을 빠르게 로드할 수 있게 함
+- fork()시 운영체제의 시스템 호출처럼 COW(Copy On Write)가 적용하여 쓰기 작업 전에는 공통된 메모리를 가리키고 있기 때문에 상당히 빠름
+- 만약 Zygtoe가 없었다면 Android OS의 핵심 프로세스인 System Server를 이용해서 일일이 NativeMethod나 Class Loader 등을 하나하나 만들어내야해서 느려졌을 것임
+- SystemServer 또한 프로세스 이기 때문에 Zygote의 Init에서 fork()되어 생성됨
+
+```plaintext
+[부팅 단계]
+──────────────────────────────────────────────
+📱 Linux Kernel
+    │
+    ▼
+🔧 init 프로세스 (/init.rc)
+    │  - 시스템 프로세스 시작
+    │
+    ▼
+⚙️ Zygote 프로세스 시작 (app_process 실행)
+    │  - ART(VM), 기본 라이브러리, 클래스 preload
+    │
+    ▼
+🧬 ZygoteInit.main()
+    │  - Zygote 준비 완료
+    │
+    ▼
+🚀 startSystemServer()
+    │
+    ▼
+🧠 SystemServer 프로세스
+    │  - ActivityManagerService
+    │  - PackageManagerService
+    │  - WindowManagerService
+    │  - PowerManagerService ...
+    │
+    ▼
+📲 Launcher (홈 앱) 실행
+──────────────────────────────────────────────
+[앱 실행 단계]
+──────────────────────────────────────────────
+👆 사용자가 아이콘 클릭
+    │
+    ▼
+🎮 ActivityManagerService (AMS)
+    │  - 앱 실행 여부 확인
+    │
+    ├── (앱 실행 중이면) → 포그라운드 전환
+    │
+    └── (앱 미실행 상태)
+          │
+          ▼
+     🔁 Zygote에게 fork 요청
+          │
+          ▼
+     👶 Zygote → fork() → 새 앱 프로세스 생성
+          │
+          ▼
+     🧠 새 앱 프로세스 시작
+          │
+          ▼
+     🔁 AMS가 ActivityThread에 launch 요청
+          │
+          ▼
+     🧩 Application 클래스 onCreate()
+          ▼
+     📱 MainActivity 띄움
+──────────────────────────────────────────────
+```
+
+#### 그럼 FCM을 받게되면 백그라운드에서도 알림을 받을 수 있는데 SystemServer로 전송하는 건가요?
+
+- 그건 아님. FCM으로 들어온 알림 메세지는 Google Play Service(GMS)라는 앱에서 수신하고, 이를 NotificationManager를 통해 요청, 이후 SystemServer의 NotificationManagerService로 전송됨
+- 여기서 말하는 Google Play Service는 Google과 관련된 서비스를 사용하기 위해 대부분 항상 백그라운드로 동작하고 있는 시스템 앱임
+- 예를 들어 gmail, 캘린더, PlayStore, GoogleMap 등과 같은 서비스를 제공하기 위해 대부분 켜져있음 _(앱인데도 시스템 수준 권한을 가지고 있음)_
+- 그렇기 떄문에 FCM은 GMS가 없는 어플에서는 동작하지 않으며, 샤오미나 화웨이 같은 Non-Google 디바이스에서는 동작하지 않음.
 
 <br><br><br>
 
 ### Kotlin과 Java가 하나의 프로젝트에 있다면 어떤식으로 컴파일 되는 지 설명해주세요.
 
+- kt파일이 먼저 .class파일로 컴파일된 이후 .java 파일이 .class파일로 컴파일 됨
+- 그렇기 때문에 Java의 Lombook이나 Kapt를 사용하면 컴파일 에러가 날 수 있음 _(kt파일과 java파일이 각자 컴파일되기 때문에 서로의 어노테이션을 이해하지 못함)_
+
 <br><br><br>
 
 ### R8을 적용한다면 내부적으로 어떤 난독화와 최적화를 하는 지 설명해주세요.
+
+- shrinkResource를 사용할 경우 사용하지 않는 리소스 파일 제거
+- unReachable한 코드 제거
+- 클래스 및 메서드 식별자를 짧은 단어로 축소시켜서 코드의 절대적 물리량 대폭 축소
+- NativeMethod의 경우 함수 명과 같은 디버그용 데이터들을 모두 제거하고 메모리 주소로 변경하여 최적화
+- if-else에서 사용하지 않는 Else문 제거 및 클래스 내부에 서브 클래스가 존재하는데 인스턴스화 되지 않을 경우 클래스 결합, 메소드로 분리되었지만 별로 사용되지 않는 경우 inline으로 변경후 각각 대입
 
 <br><br><br>
 
 ### baselineProfile, Startup Profile에 대해서 아는대로 설명해주세요.
 
-<br><br><br>
-
-### 특수 상황(백그라운드 실행, 백그라운드 제한 등)에서는 어디서부터 시작하나요?
+- BaselineProfile은 스토어에 올라가는 시점에 oat파일로 컴파일 할 수 있는 Hot Path 코드들을 같이 올려서 사용자들이 보다 빠른 Cold Start를 할 수 있게 지원
+- BaselineProfile을 사용하지 않는다면 앱이 업데이트되거나 앱 설치 이후 초기 실행시 달궈진 oat파일이 없기 때문에 단순 JIT를 사용할 때 처럼 Cold Start가 느림
+- StartupProfile의 경우는 BaselineProfile과 마찬가지로 HotPath를 Profile로 등록하는 건 동일하지만, oat 컴파일 용도가 아니라 dex파일에서 같이 사용되는 파일들을 비슷한 위치로 재배치하여 최적화 시켜줌 _(해당 메소드 및 클래스 호출 시 ClassLoader, DexLoader의 속도가 향상됨)_
 
 <br><br><br>
 
 ### Manifest에 대해 설명해주세요.
 
+- Application 및 컴포넌트들의 신분증과 같은 역할
+- 내부에 권한이나 메타 데이터 등을 정의하여 이를 기반으로 Android OS를 파일을 설치, 요청, 보호함
+- 운영체제의 PCB/TCB처럼 메타 데이터를 저장하고 있음 _(완전히 같지는 않음. PC Register같은 것은 없으니)_
+- 예를 들어 FCM을 사용하면서 Manifest에 FCM Service와 Meta-data를 등록하지 않으면 수신을 못함
+- 메시지가 와도 어떤 어플리케이션의 어떤 컴포넌트가 이를 받을 지 모르기 때문임
+
 <br><br><br>
 
 ### Mutex와 synchronized의 차이가 뭔가요?
+
+- Mutex는 Kotlin.coroutine에서 제공해주는 객체로, 명시적으로 비관적 락을 걸어두는 방법 코틀린에서는 코루틴 내부에서 동기화를 지원하려고 만들었음.
+- Mutex는 내부적으로 또 Lock 재진입 _(2중 Lock)_을 하려고 할 경우 예외를 던짐
+- synchronized는 Java에서 제공해주는 언어 키워드로 Mutex의 Monitor 기능, 스코프에 들어갈 때 Lock을 획득하고 벗어날 때 Lock을 반환함. 코루틴 내에서 사용하면 Blocking되므로 주의
+- 그렇기 때문에 코루틴 환경에서는 Mutex를 이용해서 동기화, 자바의 스레드 환경에서는 synchronized를 이용해서 동기화 해야함.
 
 <br><br><br>
 
 ### 모바일 검색에서 검색어 자동완성이나 검색어 유사도 판단에 쓰이는 건 어떤 것이 있나요?
 
+- 입력 타이밍은 Debounce나 Throttle을 요구사항에 맞게 사용하여 트래픽 제어
+- 내부적으로는 트라이 자료구조를 사용하거나 서버 API를 요청하여 자동완성을 뛰움
+- 검색어 유사도 판단에는 NLP 기반 알고리즘이 있다고는 하는데 구현할 때 알아볼 것 같음..
+
 <br><br><br>
 
 ### 사용자가 입력 결과를 보내는 도중 네트워크가 단절되는 경우 어떻게 처리할 수 있나요?
 
+1. 로컬 DB에 사용자가 입력한 데이터를 손실되지 않게 임시 저장
+2. 서버 전송 실패를 대응하기 위해 WorkManager를 이용해서 확실한 재전송을 하던지, Retry를 시도하던지, 즉시 에러 처리 이후 수동 재전송을 유도하던 지를 선택해야함
+3. 사용자에게 네트워크 연결이 귾겼다고 인지시킨 후 재전송과 같은 UX를 뛰움 
+
 <br><br><br>
 
 ### FCM으로 푸시 알림을 수신하는 전체 흐름을 설명해주세요.
+
+1. 사용자가 로그인이나 회원가입을 할 때 DeviceToken을 서버로 전송
+2. 서버는 해당 DeviceToken으로 보낼 메시지가 있을경우 전송
+3. 클라이언트에서는 FCM Service를 Manifest에 등록한 뒤, Notification을 Service에서 수신할 때 PendingIntent로 알림을 클릭했을 시 수행 동작을 정의해 둠
+4. 이후 사용자가 로그아웃이나 회원탈퇴를 할 때 서버에 DeviceToken을 제거
+5. FCM의 DeviceToken은 기본적으로 180일의 TTL을 가지며, 새롭게 갱신될 경우 FCMService의 onNewToken()을 통해서 발급받을 수 있음
 
 <br><br><br>
