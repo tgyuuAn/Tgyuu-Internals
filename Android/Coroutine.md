@@ -1,12 +1,22 @@
+### 코루틴이 스레드에 비해서 경량인 이유에 대해서 설명해주세요.
+
+- 코루틴은 별도의 스레드를 만들지 않고 Continuation와 CPS 스타일을 이용해서 메모리 영역에서 Context 정보를 저장하기 때문에 Context Switching 비용이 매우 경미
+- Dispatcher를 이용해서 일정 양의 스레드를 가지는 스레드 풀을 만들고 스레드를 생성하고 소멸시키고를 반복하지 않고 만들어진 스레드를 재사용
+
+<br><br><br>
+
 ### 코루틴 Job의 Cancel 과정에 대해서 설명해주세요.
+
+- 코루틴의 Job은 Cancel 되었다고 바로 취소되는 것이 아니라, 다음 suspend 지점을 마주해야지만 Cancel될 수 있음
+- 그렇기 때문에 내부적으로 CPU작업이 많다고 하면 중간중간에 yield를 찍거나 isActive 조건을 이용해서 suspend 지정믈 만들어줘야 함
 
 <br><br><br>
 
 ### launch와 async의 차이점에 대해서 설명해주세요.
 
-<br><br><br>
-
-### 코루틴이 스레드에 비해서 경량인 이유에 대해서 설명해주세요.
+- launch는 폭죽을 쏘는 것과 같이 return 값이 없는 행위에 대해서 병렬 및 동시적으로 작업하기 이해 사용. Job객체가 생성되며 동기를 맞추기 위해서 join()을 사용
+- aysnc는 launch와 비슷한데 return 값이 있는 작업에 대해서 병렬적으로 작업. Job객체를 상속받는 Deferred 객체가 생성되며 동기를 맞추기 위해서 wait()을 사용
+- async의 경우 wait()하는 시점에서 에러가 터질 수 있으므로 Result나 try-catch로 잡아줘야 될 수도 있음
 
 <br><br><br>
 

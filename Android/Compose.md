@@ -26,4 +26,8 @@
 
 <br><br><br>
 
+### Compose의 Composable은 stateless, stateful을 어떤 기준으로 구분하고 적용하셨는 지 설명해주세요.
+
+<br><br><br>
+
 ### 

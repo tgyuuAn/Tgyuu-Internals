@@ -8,6 +8,8 @@
 - 메모리 부족으로 인해 시스템 Kill을 당하더라도 savedStateHandle을 사용해서 데이터를 재호출할 수 있음.
 - 아키텍처적으로 MVVM이나 MVI를 구성하는데 데이터 홀더 역할로 사용할 수 있음.
 
+https://blog.naver.com/tgyuu_/223603685994
+
 <br><br><br>
 
 ### ViewModel에 context 사용을 지양하는 이유는 무엇인가요?
@@ -16,6 +18,8 @@
 
 
 ### ViewModel이 어떻게 Configuration Changes에서도 살아남는 지 설명해주세요.
+
+https://blog.naver.com/tgyuu_/223603685994
 
 <br><br><br>
 
