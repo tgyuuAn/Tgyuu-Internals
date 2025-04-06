@@ -516,5 +516,3 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 3. 클라이언트에서는 FCM Service를 Manifest에 등록한 뒤, Notification을 Service에서 수신할 때 PendingIntent로 알림을 클릭했을 시 수행 동작을 정의해 둠
 4. 이후 사용자가 로그아웃이나 회원탈퇴를 할 때 서버에 DeviceToken을 제거
 5. FCM의 DeviceToken은 기본적으로 180일의 TTL을 가지며, 새롭게 갱신될 경우 FCMService의 onNewToken()을 통해서 발급받을 수 있음
-
-<br><br><br>
