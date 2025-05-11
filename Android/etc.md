@@ -95,14 +95,52 @@ onCreate() -> onStart() -> onResume() -> onPause() -> onStop() -> onDestroy()
 onNewIntent()
 ```
 
-- onCreate()는 Activity가 새롭게 만들어질 때 최초로 한 번만 실행
-- onStart()는 onStop()과 세트며, Activity가 완전히 보이지 않을 때 onStop()이 호출된다 (액티비티 전환이후 돌아왔을 때, 홈 키를 눌러 백그라운드로 갔을 때) 이 때 돌아올 경우 호출됨
-- onResume()는 onPause()와 세트며, dialog나 BottomSheet같이 Acitvitiy는 보이지만 포커스를 빼았겼을 때 onPause()가 호출되는데 다시 Aciticty로 포커스가 돌아왔을 때 호출된다. 
-- onPause()는 위에서 말했듯 Activity는 보이지만 포커스를 잃어버렸을 때 호출된다. 이 때 애니메이션 정지, 센서 일시 중지, 저장 등 빠른 정지 작업을 해주면 된다고 한다.
-- onStart()는 Activity가 아예 보이지 않는 경우 (다른 Acitivty로 전환 및 홈으로 이동) 과 같은 경우에 호출된다. 이 때 네트워크 자원 해제를 해주면 된다고 한다.
-- onDestroy()는 Activity가 소멸하기 직전에 호출된다. 사용자가 finish()를 호출하거나 ConfigurationChange가 발생했을 때 호출된다.
+- onCreate()는 Activity 인스턴스가 만들어질 때 실행, ConfigurationChange가 일어날 때에도 호출이됨. savedInstanceState가 Bundle? 형태로 내려오기 때문에 Intent를 담아서 startActivity를 호출하였을 때나, ConfigurationChange로 인해서 Bundle이 저장되었을 때 데이터를 꺼내올 수 있음.
+컴포즈를 사용한다면 이 부분에서 setContent를 수행하며, xml을 사용한다면 바인딩을 연결해주는 부분임. DI가 실질적으로 수행되는 부분이기도 하다.
+
+- onStart()는 onStop()과 세트며, Activity가 완전히 보이지 않을 때 onStop()이 호출된다 (액티비티 전환이후 돌아왔을 때, 홈 키를 눌러 백그라운드로 갔을 때) 이 때 돌아올 경우 호출됨.
+주로 StateFlow나 SharedFlow와 같은 HotStream을 구독하는 부분이지만, Kotlin 언어에서 repeatOnLifecycle() 함수가 지원됨에 따라 해당 함수는 onCreate()로 올라갔음. _(내부적으로는 onStart에서 구독하고 onStop에서 해제하는 매커니즘임을 잊지말자.)_
+
+- onResume()는 onPause()와 세트이며, dialog나 BottomSheet같이 Acitvitiy는 보이지만 포커스를 빼앗겼을 때 onPause()가 호출되는데 다시 Aciticty로 포커스가 돌아왔을 때 호출된다. 
+
+- onPause()는 위에서 말했듯 Activity는 보이지만 포커스를 잃어버렸을 때 호출된다. 이 때 애니메이션 정지, 센서 일시 중지, 저장 등 빠른 정지 작업을 해주면 된다고 한다. onStop과 다르게 프로세스가 사용자가 사용하고 있는 상태이므로 가벼운 작업만 해주어야 함.
+
+- onStop()은 Activity가 아예 보이지 않는 경우 (다른 Acitivty로 전환 및 홈으로 이동) 과 같은 경우에 호출된다. 이 때 네트워크 자원 해제를 해주면 된다고 한다. 또한 운영체제 레벨에서 메모리가 필요해서 해당 프로세스를 kill했을 때에 onDestroy까지 나아가지 않고, onStop에서 죽게되며 다시 실행하였을 때에는 onCreate()부터 시작하게 된다.
+
+- onDestroy()는 Activity가 소멸하기 직전에 호출된다. 사용자가 finish()를 호출하거나 ConfigurationChange가 발생했을 때 호출됨. 시스템 메모리가 부족해서 해당 프로세스가 kill 당했을 때 onDestroy 호출 없이 죽을 수도 있음.
+
 - onRestart()는 일반적인 흐름에서는 호출되지 않지만 onStop()이 호출된 이후 onStart()가 호출되기 직전 호출된다.
-- onNewIntent()는 standard가 아니며 Activity가 현재 ActivityStack에서 Top에 있을경우 새로운 Intent를 받았을 때 호출된다.
+
+- onNewIntent()는 launchMode가 singleTop/singleTask이거나 Intent 플래그에 FLAG_ACTIVITY_SINGLE_TOP, FLAG_ACTIVITY_NEW_TASK가 있을 때 기존 인스턴스가 최상단이면 호출.
+
+<br><br><br>
+
+### Fragment의 생명주기에 대해 아는대로 말해주세요.
+
+```
+onAttach() -> onCreate() -> onCreateView() -> onViewCreated() -> onViewStateRestored() -> onStart() -> onResume() -> onPause() 
+-> onStop() -> onSaveInstanceState() -> onDestroyView() -> onDestroy() -> onDetach()
+```
+
+- onAttach()는 Activity에 Fragment가 붙었을 때 호출되는 콜백, 인자로 Activity의 Context가 주어짐. 그렇기 때문에 이 콜백 이후에서부터 requireContext(), requireActivity() 호출이 안전해짐.
+
+- onCreate()에는 savedInstanceState가 Bundle? 형태로 담겨져 내려옴. Activity의 onCreate()와 마찬가지로 이 부분에서 저장된 데이터를 꺼내올 수 있음. UI를 그리는 것은 안됨.
+
+- onCreateView()는 UI가 그려지기 시작하는 부분. 이 부분에서 프래그먼트의 UI를 동적으로 그리거나 하는 등의 행위를 할 수 있음. 아직 UI가 사용자에게 보여지지는 않음. View가 Inflate되는 단계임.
+
+- onViewCreated()는 onCreateView()에서 UI가 완성되었을 때 넘겨받는 부분. 사용자에게 보여지기 직전임. View는 이미 Inflate가 되어있기 때문에, 이 부분에서 Binding을 연결하거나 repeatOnLifecycle() 작업을 해주면 됨. 주의해야 할 점은 일반 lifecycleOwner를 사용하면 Activity의 LifecycleOwner를 사용하게 되므로 viewLifecycleOwner를 사용해야함. 
+
+- onViewStateRestored()는 onCreate()와 마찬가지로 SavedInstanceState가 Bundle? 형태로 담겨져 내려옴. 그런데 왜 분리되어 있냐하면, onViewCreated()이후 뷰가 준비가된 상태라서 이 부분에서 UI와 관련된 데이터를 다시 복원해주면 됨 _(스크롤, 인덱스 등등)_ 만약 onCreate()에서 위 작업을 하려고 한다면 그려질 View가 아직 준비가 되어있지 않으므로 할 수 없을 것임.
+
+- onStart()는 사용자에게 UI가 보여지기 시작하는 시점임. DialogFragment의 경우 이 부분에서 resize()를 해주면 되고, onStop()에서 해제된 자원을 다시 연결해주면 됨
+
+- onPause() - onResume()도 Activity와 별반 다를 것이 없다.
+
+- onSaveInstanceState()는 Activity가 onDestry()에서 Bundle로 데이터를 남겨놓듯이 데이터를 저장해놓는 부분. onCreate()에서 사용할 데이터와 onViewStateRestored()에서 사용할 데이터를 저장하면 됨. _(안들외드 옛날 버전에서는 onStop 직후에 호출되었지만, 최신 버전에서는 onStop 직전에 호출됨)_
+
+- onDestroyView()는 Fragment의 ViewTree가 제거되는 부분. 주의해야 할 부분은 ViewTree가 제거되는 것이고 Fragment는 아직 인스턴스로 남아있을 수 있으므로, Binding은 반드시 null로 자원해제 해주어야 메모리 누수가 없음. 만약 onDestroyView()에서 binding = null을 해주지 않으면 백스텍에 남아있는 프래그먼트 인스턴스는 계속해서 Binding을 Holding하게 되어서 메모리 누수가 생길 수 있음.
+
+- onDetach()는 Context가 null이 되는 시점. 이 부분 이후로 requireContext()는 에러를 뱉음
 
 <br><br><br>
 
@@ -516,3 +554,8 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 3. 클라이언트에서는 FCM Service를 Manifest에 등록한 뒤, Notification을 Service에서 수신할 때 PendingIntent로 알림을 클릭했을 시 수행 동작을 정의해 둠
 4. 이후 사용자가 로그아웃이나 회원탈퇴를 할 때 서버에 DeviceToken을 제거
 5. FCM의 DeviceToken은 기본적으로 180일의 TTL을 가지며, 새롭게 갱신될 경우 FCMService의 onNewToken()을 통해서 발급받을 수 있음
+
+<br><br><br>
+
+### dp, sp를 설명해주세요.
+
