@@ -213,7 +213,6 @@ https://blog.naver.com/tgyuu_/223057071742
 - Glide, Coil
 - Glide는 내부적으로 Java의 Excutor + Thread를 이용해서 비동기로 이미지를 호출함
 - Coil은 내부적으로 Coroutine을 이용해서 비동기로 이미지를 호출함
-- 둘다 메모리 캐싱 + 디스크 캐싱을 진행하지만, Glide는 내부적으로 메모리 케싱을 할 때 WeakReference를 이용해서 케싱을 하는 것도 있음
 - Coil은 OkHttp의 디스크 캐싱을 사용, Glide는 내부적으로 DiskLruCache를 사용함.
 - Compose에 대한 지원은 Coil이 매우 강력함 _(공식문서에서도 밀어줄 정도)_ 반면 Glide는 Coil에 대한 지원이 약함
 
@@ -353,7 +352,7 @@ https://blog.naver.com/tgyuu_/223595686577
 
 - LeakCanary를 사용해서 메모리 누수 탐지
 - AndroidProfile를 이용해서 메모리 스냅샷 확인
-- HeapDump를 사용해서 누수지적 추적
+- HeapDump를 사용해서 누수지점 추적
 
 <br><br><br>
 
@@ -418,6 +417,8 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 - SystemServer 또한 프로세스 이기 때문에 Zygote의 Init에서 fork()되어 생성됨
 
 ```plaintext
+ thx to GPT !!
+
 [부팅 단계]
 ──────────────────────────────────────────────
 📱 Linux Kernel
@@ -480,8 +481,8 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 
 #### 그럼 FCM을 받게되면 백그라운드에서도 알림을 받을 수 있는데 SystemServer로 전송하는 건가요?
 
-- 그건 아님. FCM으로 들어온 알림 메세지는 Google Play Service(GMS)라는 앱에서 수신하고, 이를 NotificationManager를 통해 요청, 이후 SystemServer의 NotificationManagerService로 전송됨
-- 여기서 말하는 Google Play Service는 Google과 관련된 서비스를 사용하기 위해 대부분 항상 백그라운드로 동작하고 있는 시스템 앱임
+- FCM으로 들어온 알림 메세지는 Google Play Service(GMS)라는 앱에서 수신하고, 이를 NotificationManager를 통해 요청, 이후 SystemServer의 NotificationManagerService로 전송됨
+- 여기서 말하는 Google Play Service는 Google과 관련된 서비스를 사용하기 위해 대부분 항상 백그라운드로 동작하고 있는 시스템 앱
 - 예를 들어 gmail, 캘린더, PlayStore, GoogleMap 등과 같은 서비스를 제공하기 위해 대부분 켜져있음 _(앱인데도 시스템 수준 권한을 가지고 있음)_
 - 그렇기 떄문에 FCM은 GMS가 없는 어플에서는 동작하지 않으며, 샤오미나 화웨이 같은 Non-Google 디바이스에서는 동작하지 않음.
 
@@ -535,7 +536,7 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 
 - 입력 타이밍은 Debounce나 Throttle을 요구사항에 맞게 사용하여 트래픽 제어
 - 내부적으로는 트라이 자료구조를 사용하거나 서버 API를 요청하여 자동완성을 뛰움
-- 검색어 유사도 판단에는 NLP 기반 알고리즘이 있다고는 하는데 구현할 때 알아볼 것 같음..
+- 검색어 유사도 판단에는 NLP 기반 알고리즘이 있다고는 하는데 이건 잘 모르겠다. 하하
 
 <br><br><br>
 
@@ -543,7 +544,7 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 
 1. 로컬 DB에 사용자가 입력한 데이터를 손실되지 않게 임시 저장
 2. 서버 전송 실패를 대응하기 위해 WorkManager를 이용해서 확실한 재전송을 하던지, Retry를 시도하던지, 즉시 에러 처리 이후 수동 재전송을 유도하던 지를 선택해야함
-3. 사용자에게 네트워크 연결이 귾겼다고 인지시킨 후 재전송과 같은 UX를 뛰움 
+3. 사용자에게 네트워크 연결이 끊겼다고 인지시킨 후 재전송과 같은 UX를 뛰움 
 
 <br><br><br>
 
@@ -559,3 +560,6 @@ fun searchWithBody(@Body request: SearchRequest): Response<T>
 
 ### dp, sp를 설명해주세요.
 
+- 화면의 픽셀 밀도에 관계없이 일관된 크기를 보여주기 위해 사용
+- dp의 경우 해당 디바이스가 160dpi일 경우 1dp = 1px임. 만약 320dpi이면 1dp = 2px 이겠고욤.
+- sp도 dp와 비슷한데 이는 글자 크기에 사용되는 것. 마찬가지로 디바이스 크기가 커지면 글자도 커짐

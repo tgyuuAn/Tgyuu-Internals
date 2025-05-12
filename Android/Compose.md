@@ -17,6 +17,9 @@
 
 - 해당 어노테이션을 사용하지 않을 경우, UI를 그리는 모듈의 외부 모듈과 내부적으로 가변적인 객체가 있을경우 Non-Stable하다고 판단하여 항상 Restartable로 판단하게 됨
 - 내부적으로 가변 객체가 있더라도 Copy() 연산을 통해서 값이 바뀐다거나 바뀔일이 없다면 위 어노테이션을 사용함으로써 해당 Composable을 Skippable 하게 만들수 있음.
+- @Immutable은 내부에 가변적인 객체가 없으며 모두 val일 경우 사용가능. 이는 해당 객체가 변경될 때 copy()를 통해서만 재할당될 때에만 사용가능
+- @Stable의 경우 Immutable처럼 빡빡한 조건은 아니지만 내부적으로 Coompose Snapshot 기능이 있는 mutableState나 SnapShotList 등에 대해서는 가변적인 것도 허용됨 _(값이 변경되도 ComposeRuntime이 바로 파악할 수 있으므로)_
+- @Immutable과 @Stable은 위의 방법 외에는 리컴포지션 정보에 대해서 ComposeRuntime이 알 수 없으므로 개발자가 잘 판단해서 사용해야 함.
 
 https://blog.naver.com/tgyuu_/223720324026
 
@@ -52,3 +55,12 @@ https://blog.naver.com/tgyuu_/223720324026
 
 - State가 빈번하게 변경되지 않을경우 stateless하게 관리하려고 노력하였으며, 만약 내부적으로 값의 변경이 잦거나 props drilling 해야하는 Compose의 트리 계층이 깊다면 내부적으로 stateful하게 값을 hold하고 있는 다음 특정 Intent에서 holding한 값을 ViewModel로 전송하려고 하였음. 
 - 이 방식은 보일러 플레이트 코드도 많이 줄일 수 있지만 팀 내에서 stateless와 stateful을 규칙 과 약속 없이 사용하게 되면 디버깅이 힘들어질 수도 있고 Preview나 UI테스트를 작성하는 데 어려워 질 수 있으므로 트레이드 오프를 잘 고려하여 작성해야 함.
+
+<br><br><br>
+
+### 운영체제에 의해서 Process Kill 당했을 때 Compose UI를 복원시킬 수 있는 방법
+
+- remember만 사용하면 Process Kill 당했을 때 Compose UI를 복원할 수 없음.
+- 이 때 rememberSaveable을 사용하면 내부적으로 savedStateHandle을 이용해서 Bundle 형태로 데이터를 저장할 수 있으므로 다시 복원하는 시점에서 꺼내서 사용할 수 있음.
+- Bundle에 담기지 않는 객체들은 Serilizable이나 Parcelabe이라면 저장할 수 있으나, 아닐 경우 Saver를 사용해야함.
+- Saver는 ListSaver와 MapSaver 두 가지 형태가 있고 MapSaver보다 ListSaver가 성능상 약간 더 좋지만 가독성 측면에서는 MapSaver가 더 좋아서 이건 선택의 영역
