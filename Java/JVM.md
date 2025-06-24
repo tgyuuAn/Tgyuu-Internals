@@ -17,7 +17,7 @@
 
 - 이러한 실행과정 속에서 JVM은 필요에 따라 Thread Synchronization과 GC와 같은 관리 작업을 수행함
 
-![alt text](resource/image.png)
+<img width="500" src="resource/image.png" />
 
 <br><br><br>
 
@@ -83,7 +83,7 @@ JIT로 컴파일 된 네이티브 코드는 캐싱이 되기 때문에 for문이
 - 이 과정에서 Unreachable한 코드들은 죽게되며 Survival 0 <-> Survival 1 을 기본값으로 총 15번 왔다갔다했을 때에도 살아남을 경우 Old 영역으로 이동된다.
 - Old 영역도 가득 차게 되면 Old 영역을 대상으로 하는 Major GC를 수행하며 이는 Minor GC보다 더 오래 걸림
 
-![alt text](resource/image-1.png)
+<img width="500" src="resource/image-1.png" />
 
 - Refereence Counting 방식을 사용하는 Swift, Rust는 컴파일 시점에 GC가 돌아가고, Mark and Sweep을 쓰는 Java는 런타임 시점에 GC가 돌아감
 - 런타임에서 GC가 돌아가기 때문에 중간중간에 Stop the Wrold라는 오버헤드가 존재
