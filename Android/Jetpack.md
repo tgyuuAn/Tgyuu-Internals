@@ -36,6 +36,14 @@ https://blog.naver.com/tgyuu_/223603685994
 
 <br><br><br>
 
+### ViewModel은 Android 프레임워크 의존성을 가지고 있는데, 테스트 할 때 AndroidTest가 아니라 일반 Test에 작성이 가능한 이유는?
+
+- ViewModel을 단위 테스트할 때에는 프레임워크 생명주기를 따르지 않고 ViewModel 객체만 테스트 하므로 AndroidTest가 아니어도 됨
+- 일반 Test에서 ViewModel에 파라미터를 넣은 채로 ViewModel을 생성할 수 있는 이유는, Activity와 같은 ViewModelOwner가 ViewModelProvider를 이용하는 과정이 없으므로 크래시가 나지 않음
+- Activity나 Fragment에서는 ViewModelProvider를 이용해서 ConfigurationChange가 일어나더라도 똑같은 인스턴스를 반환받아야 하므로 ViewModelFactory가 없으면 크래시가 나게됨.
+
+<br><br><br>
+
 ### HotFlow와 ColdFlow의 차이점에 대해서 설명해주세요.
 
 - HotFlow는 구독자와 무관하게 데이터 생성 명령을 받으면 생성 후 값을 방출, 값을 공유 ex) LiveData, SharedFlow, StateFlow
