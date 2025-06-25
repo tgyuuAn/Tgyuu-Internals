@@ -35,13 +35,6 @@
 
 <br><br><br>
 
-### AssistedInject를 사용하면 어떤 장점이 있나요?
-
-- 객체를 컴파일 시점에 생성하는 것이 아니라 런타임 시점에 필요한 파라미터를 이용해서 지연 생성시킬 수 있음.
-- ViewModel의 경우 AssistedInject를 사용하려면 @HiltViewModel 어노테이션을 제거하고 @AssistedFactroy를 이용해서 Hilt에게 ViewModel을 생성하는 방식을 알려줘야 함.
-
-<br><br><br>
-
 ### Hilt는 컴파일 할 때 어떻게 DI되는 지 설명해주세요.
 
 - App모듈로부터 직접 의존 및 간접 의존 하고 있는 모듈의 Hilt 모듈을 탐색하면서 DI 그래프를 그려나감.
@@ -69,3 +62,110 @@
 - @Provides는 인터페이스와 외부 라이브러리의 객체를 생성하는 방식을 알려줄 때 주로 사용. 외부 라이브러리는 @Binds를 통해서 생성 방법을 알려주지 못하기 때문에 이 경우 어쩔 수 없이 @Provides 사용. Provides의 경우에는 해당 객체를 생성하는 데 필요한 객체들을 일일이 명시해주어야 하는 단점이 있음.
 
 그렇기 때문에 프로젝트 내부의 인터페이스를 생성할 때에는 보일러 플레이트를 감소하는 측면에서 @Binds를 사용하고 외부 라이브러리를 생성하는 방식을 알려줄 때나 Hilt 모듈에서 다형성을 형성해야 할 경우 어쩔 수 없이 @Provides를 채택.
+
+<br><br><br>
+
+### @HiltViewModel, @AndroidEntryPoint
+
+- Hilt를 사용하지 않을경우, ViewModel에 생성자를 넣어주려면 ViewModelFactory를 이용해야 함.
+- @HiltViewModel을 사용하면 컴파일 시점에 파라미터를 주입할 수 있도록 Factory를 알아서 생성해줌.
+- Activity나 Fragment의 경우는 안드로이드 프레임워크에 의해 개발자가 직접 해당 객체를 인스턴스화 할 수 없는데, 그렇기 때문에 지연 주입을 사용하기 위해서는 @AndroidEntryPoint를 반드시 사용해야 함.
+
+<br><br><br>
+
+### AssistedInject를 사용하면 어떤 장점이 있나요?
+
+- 객체를 컴파일 시점에 생성하는 것이 아니라 런타임 시점에 필요한 파라미터를 이용해서 지연 생성시킬 수 있음.
+- ViewModel의 경우 AssistedInject를 사용하려면 @HiltViewModel 어노테이션을 제거하고 @AssistedFactroy를 이용해서 Hilt에게 ViewModel을 생성하는 방식을 알려줘야 함.
+- 위에서 설명했듯이 @HiltViewModel의 경우 컴파일 시점에 Factory 코드를 생성해서 알아서 주입을 해주는데, 동적으로 주입되는 파라미터가 있을 경우 해당 파라미터를 받는 팩토리를 정의한 뒤, 나머지 코드는 알아서 생성하도록 하는 것임.
+- SavedStateHandle 또한 런타임 파라미터 이므로, 예전에는 @Assisted로 주입해줘야 했지만 라이브러리가 업데이트됨에 따라 현재는 SavedStateHandle에 @Assisted는 필요 없어짐.
+- 현재는 대부분 SavedStateHandle로 데이터를 가져오므로 필요없지만, NavigationArgument로 전달되는 인자가 아니거나 직렬화/역직렬화가 어렵거나 시간이 오래 걸린다면 @Assisted를 고려해볼만 함
+
+<br><br><br>
+
+
+### viewModel()와 hiltViewModel()의 차이
+
+lifecycle.compose() 에서 제공해주는 `viewModel()`은 아래와 같이 구현.
+
+```kotlin
+package androidx.lifecycle.viewmodel.compose
+
+@Composable
+public inline fun <reified VM : ViewModel> viewModel(
+    viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
+    },
+    key: String? = null,
+    factory: ViewModelProvider.Factory? = null,
+    extras: CreationExtras = if (viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
+        viewModelStoreOwner.defaultViewModelCreationExtras
+    } else {
+        CreationExtras.Empty
+    }
+): VM = viewModel(VM::class.java, viewModelStoreOwner, key, factory, extras)
+```
+
+- ViewTreeViewModelStoreOwner.current를 기준으로 ViewModel을 생성하는데, 대부분 Activity나 Fragment임.
+- HiltViewModel을 사용하고 있다면 ViewModel의 파라미터를 ViewModelFactory를 만들어서 넘겨줘야 함.
+- NavHost 내부에서 호출한다면 NavBackStackEntry, 아니라면 ViewModel()과 같음.
+
+<br><br><br>
+
+- HiltViewModel의 경우는 NavBackStackEntry가 있다면 NavBackStackEntry에 ViewModelStoreOwner로 설정한 뒤 hiltViewModelFactroy를 호출, 그게 아니라면 viewModel()과 동일하게 동작
+
+```kotlin
+@Composable
+inline fun <reified VM : ViewModel> hiltViewModel(
+    viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
+    }
+): VM {
+    val factory = createHiltViewModelFactory(viewModelStoreOwner)
+    return viewModel(viewModelStoreOwner, factory = factory)
+}
+
+@Composable
+@PublishedApi
+internal fun createHiltViewModelFactory(
+    viewModelStoreOwner: ViewModelStoreOwner
+): ViewModelProvider.Factory? = if (viewModelStoreOwner is NavBackStackEntry) {
+    HiltViewModelFactory(
+        context = LocalContext.current,
+        navBackStackEntry = viewModelStoreOwner
+    )
+} else {
+    // Use the default factory provided by the ViewModelStoreOwner
+    // and assume it is an @AndroidEntryPoint annotated fragment or activity
+    null
+}
+
+public fun HiltViewModelFactory(
+    context: Context,
+    navBackStackEntry: NavBackStackEntry
+): ViewModelProvider.Factory {
+    val activity = context.let {
+        var ctx = it
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) {
+                return@let ctx
+            }
+            ctx = ctx.baseContext
+        }
+        throw IllegalStateException(
+            "Expected an activity context for creating a HiltViewModelFactory for a " +
+                "NavBackStackEntry but instead found: $ctx"
+        )
+    }
+    return HiltViewModelFactory.createInternal(
+        activity,
+        navBackStackEntry, // SavedStateRegistryOwner로 치환
+        navBackStackEntry.arguments, // Bundle 객체
+        navBackStackEntry.defaultViewModelProviderFactory, //ViewModelProvider.Factory
+    )
+}
+```
+
+- **viewModel()로 하더라도 생명주기가 Activity가 아니라는 것을 명심!!!**
+
+<br><br><br>
