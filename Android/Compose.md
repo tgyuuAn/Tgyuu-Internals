@@ -28,7 +28,7 @@ https://blog.naver.com/tgyuu_/223720324026
 ### CompositionLocal에 대해서 설명해주세요. StaticCompositionLocal과 다른 점은 무엇인가요?
 
 - PropsDrilling 방식으로 데이터를 전달하는 것이 아닌, DI를 할 때 IoC 컨테이너를 사용하는 것처럼 CompositionLocal을 사용하면 하위 컴포저블에서 원할 때 언제던지 해당 값을 가져와서 사용할 수 있음
-- StaticCompositionLocal는 가능하면 데이터가 자주 변하지 않는 곳에 사용해야하는데, 왜냐하면 StaticCompositionLocal로 제공하는 값이 변경될 경우 하위 컴포저블 중 한 개라도 해당 값을 참조하고 있다면 스코프 아래에 있는 모든 컴포저블이 리컴포지션 됨
+- StaticCompositionLocal는 가능하면 데이터가 자주 변하지 않는 곳에 사용해야하는데, 왜냐하면 StaticCompositionLocal로 제공하는 값이 변경될 경우 하위 컴포저블 스코프 아래에 있는 모든 컴포저블이 리컴포지션 됨
 - 반면 CompsositionLocal은 해당 값을 참조하고 있는 Composable **만** 리컴포지션 되는데, 그렇기 때문에 값이 변할 가능성이 있다면 CompositionLocal을 쓰는 것이 바람직함.
 - 그럼 왜 StaticCompositionLocal을 사용하느냐고 반문할 수 있는데, Immutable한 객체를 제공하면 컴포즈 컴파일러 내부적으로 더 공격적인 최적화를 할 수 있으며 Recomposition Tracking을 할 필요가 없기 때문임.
 - 또한 테마나 언어 설정의 경우는 하위 모든 Composable이 변경되어야만 하므로 staticCompositionLocal을 사용했을 때 더 원하는 결과가 나올 수 있음.
